@@ -44,10 +44,7 @@ const { y: scroll } = useWindowScroll()
         <!-- <RouterLink to="/chat" title="Let's Chat">
           <div i-ri-chat-1-line />
         </RouterLink> -->
-        <a href="https://bsky.app/profile/antfu.me" target="_blank" title="Bluesky" class="lt-md:hidden">
-          <div i-ri-bluesky-line />
-        </a>
-        <a href="https://github.com/antfu" target="_blank" title="GitHub" class="lt-md:hidden">
+        <a href="https://github.com/treetreedi" target="_blank" title="GitHub" class="lt-md:hidden">
           <div i-uil-github-alt />
         </a>
         <a href="/feed.xml" target="_blank" title="RSS" class="lt-md:hidden">
