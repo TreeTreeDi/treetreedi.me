@@ -1,6 +1,6 @@
 ---
 title: 从 0 到 1 体验 CI/CD
-date: 2025-11-10T08:53:00.000+00:00
+date: 2024-11-10T08:53:00.000+00:00
 lang: zh
 duration: 8min
 description: 第一次把项目接上 CI/CD 的感受、踩坑和最小落地方案
