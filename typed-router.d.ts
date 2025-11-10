@@ -114,30 +114,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/posts/': RouteRecordInfo<
-      '/posts/',
-      '/posts',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/posts/about-yak-shaving-zh': RouteRecordInfo<
-      '/posts/about-yak-shaving-zh',
-      '/posts/about-yak-shaving-zh',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/posts/hello-world': RouteRecordInfo<
-      '/posts/hello-world',
-      '/posts/hello-world',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
-    '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
-      '/posts/tree-component-on-demand-rendering',
-      '/posts/tree-component-on-demand-rendering',
+    '/posts/ci-cd-getting-started': RouteRecordInfo<
+      '/posts/ci-cd-getting-started',
+      '/posts/ci-cd-getting-started',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -268,27 +247,9 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'pages/posts/index.md': {
+    'pages/posts/ci-cd-getting-started.md': {
       routes:
-        | '/posts/'
-      views:
-        | never
-    }
-    'pages/posts/about-yak-shaving-zh.md': {
-      routes:
-        | '/posts/about-yak-shaving-zh'
-      views:
-        | never
-    }
-    'pages/posts/hello-world.md': {
-      routes:
-        | '/posts/hello-world'
-      views:
-        | never
-    }
-    'pages/posts/tree-component-on-demand-rendering.md': {
-      routes:
-        | '/posts/tree-component-on-demand-rendering'
+        | '/posts/ci-cd-getting-started'
       views:
         | never
     }
