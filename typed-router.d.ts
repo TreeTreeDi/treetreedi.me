@@ -114,13 +114,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/posts/': RouteRecordInfo<
-      '/posts/',
-      '/posts',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/posts/ci-cd-getting-started': RouteRecordInfo<
       '/posts/ci-cd-getting-started',
       '/posts/ci-cd-getting-started',
@@ -128,9 +121,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
-      '/posts/tree-component-on-demand-rendering',
-      '/posts/tree-component-on-demand-rendering',
+    '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构': RouteRecordInfo<
+      '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构',
+      '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -261,21 +254,15 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'pages/posts/index.md': {
-      routes:
-        | '/posts/'
-      views:
-        | never
-    }
     'pages/posts/ci-cd-getting-started.md': {
       routes:
         | '/posts/ci-cd-getting-started'
       views:
         | never
     }
-    'pages/posts/tree-component-on-demand-rendering.md': {
+    'pages/posts/数据中台：数据库操作模块的内存治理与数据所有权重构.md': {
       routes:
-        | '/posts/tree-component-on-demand-rendering'
+        | '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构'
       views:
         | never
     }
