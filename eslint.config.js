@@ -7,6 +7,8 @@ export default antfu(
     formatters: true,
     markdown: {
       overrides: {
+        'style/max-statements-per-line': 'off',
+        'style/no-multiple-empty-lines': 'off',
       },
     },
     pnpm: true,

@@ -114,13 +114,12 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/posts': RouteRecordInfo<
-      '/posts',
+    '/posts/': RouteRecordInfo<
+      '/posts/',
       '/posts',
       Record<never, never>,
       Record<never, never>,
-      | '/posts/about-yak-shaving-zh'
-      | '/posts/hello-world'
+      | never
     >,
     '/posts/about-yak-shaving-zh': RouteRecordInfo<
       '/posts/about-yak-shaving-zh',
@@ -132,6 +131,13 @@ declare module 'vue-router/auto-routes' {
     '/posts/hello-world': RouteRecordInfo<
       '/posts/hello-world',
       '/posts/hello-world',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
+      '/posts/tree-component-on-demand-rendering',
+      '/posts/tree-component-on-demand-rendering',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -262,13 +268,11 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'pages/posts.md': {
+    'pages/posts/index.md': {
       routes:
-        | '/posts'
-        | '/posts/about-yak-shaving-zh'
-        | '/posts/hello-world'
+        | '/posts/'
       views:
-        | 'default'
+        | never
     }
     'pages/posts/about-yak-shaving-zh.md': {
       routes:
@@ -279,6 +283,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/hello-world.md': {
       routes:
         | '/posts/hello-world'
+      views:
+        | never
+    }
+    'pages/posts/tree-component-on-demand-rendering.md': {
+      routes:
+        | '/posts/tree-component-on-demand-rendering'
       views:
         | never
     }
