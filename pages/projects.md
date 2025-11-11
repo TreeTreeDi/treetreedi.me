@@ -6,10 +6,10 @@ wrapperClass: 'text-center'
 art: dots
 projects:
   Current Focus:
-    - name: 'Example Project'
-      link: 'https://github.com/treetreedi'
-      desc: 'My projects'
-      icon: 'i-carbon-code'
+    - name: 'CloudQuery'
+      link: 'https://cloudquery.club/'
+      desc: '数据库一体化操作平台'
+      icon: 'i-carbon-data-base'
 ---
 
 <!-- @layout-full-width -->
