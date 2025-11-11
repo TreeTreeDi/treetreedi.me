@@ -114,9 +114,30 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/': RouteRecordInfo<
+      '/posts/',
+      '/posts',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/ci-cd-getting-started': RouteRecordInfo<
       '/posts/ci-cd-getting-started',
       '/posts/ci-cd-getting-started',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
+      '/posts/tree-component-on-demand-rendering',
+      '/posts/tree-component-on-demand-rendering',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关': RouteRecordInfo<
+      '/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关',
+      '/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -254,9 +275,27 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'pages/posts/index.md': {
+      routes:
+        | '/posts/'
+      views:
+        | never
+    }
     'pages/posts/ci-cd-getting-started.md': {
       routes:
         | '/posts/ci-cd-getting-started'
+      views:
+        | never
+    }
+    'pages/posts/tree-component-on-demand-rendering.md': {
+      routes:
+        | '/posts/tree-component-on-demand-rendering'
+      views:
+        | never
+    }
+    'pages/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关.md': {
+      routes:
+        | '/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关'
       views:
         | never
     }
