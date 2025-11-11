@@ -135,6 +135,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度': RouteRecordInfo<
+      '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度',
+      '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
       '/posts/tree-component-on-demand-rendering',
       '/posts/tree-component-on-demand-rendering',
@@ -297,6 +304,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误.md': {
       routes:
         | '/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误'
+      views:
+        | never
+    }
+    'pages/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度.md': {
+      routes:
+        | '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度'
       views:
         | never
     }
