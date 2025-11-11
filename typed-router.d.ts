@@ -128,6 +128,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误': RouteRecordInfo<
+      '/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误',
+      '/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/tree-component-on-demand-rendering': RouteRecordInfo<
       '/posts/tree-component-on-demand-rendering',
       '/posts/tree-component-on-demand-rendering',
@@ -284,6 +291,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/ci-cd-getting-started.md': {
       routes:
         | '/posts/ci-cd-getting-started'
+      views:
+        | never
+    }
+    'pages/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误.md': {
+      routes:
+        | '/posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误'
       views:
         | never
     }
