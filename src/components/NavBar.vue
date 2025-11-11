@@ -38,8 +38,9 @@ const { y: scroll } = useWindowScroll()
           <span class="lt-md:hidden">Projects</span>
           <div i-ri-lightbulb-line class="md:hidden" />
         </RouterLink>
-        <RouterLink to="/photos" title="Photos">
-          <div i-ri-camera-3-line />
+        <RouterLink to="/photos" title="Life">
+          <span class="lt-md:hidden">Life</span>
+          <div i-ri-camera-3-line class="md:hidden" />
         </RouterLink>
         <!-- <RouterLink to="/chat" title="Let's Chat">
           <div i-ri-chat-1-line />
