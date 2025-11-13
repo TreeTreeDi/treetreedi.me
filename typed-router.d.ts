@@ -156,6 +156,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/拾遗：React 设计 从批处理到 useTransition': RouteRecordInfo<
+      '/posts/拾遗：React 设计 从批处理到 useTransition',
+      '/posts/拾遗：React 设计 从批处理到 useTransition',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构': RouteRecordInfo<
       '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构',
       '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构',
@@ -322,6 +329,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关.md': {
       routes:
         | '/posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关'
+      views:
+        | never
+    }
+    'pages/posts/拾遗：React 设计 从批处理到 useTransition.md': {
+      routes:
+        | '/posts/拾遗：React 设计 从批处理到 useTransition'
       views:
         | never
     }
