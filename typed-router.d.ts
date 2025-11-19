@@ -170,6 +170,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全': RouteRecordInfo<
+      '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全',
+      '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/projects': RouteRecordInfo<
       '/projects',
       '/projects',
@@ -341,6 +348,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/数据中台：数据库操作模块的内存治理与数据所有权重构.md': {
       routes:
         | '/posts/数据中台：数据库操作模块的内存治理与数据所有权重构'
+      views:
+        | never
+    }
+    'pages/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全.md': {
+      routes:
+        | '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全'
       views:
         | never
     }

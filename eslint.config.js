@@ -9,6 +9,8 @@ export default antfu(
       overrides: {
         'style/max-statements-per-line': 'off',
         'style/no-multiple-empty-lines': 'off',
+        'ts/explicit-function-return-type': 'off',
+        'ts/explicit-member-accessibility': 'off',
       },
     },
     pnpm: true,
