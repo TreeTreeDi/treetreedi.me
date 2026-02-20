@@ -1,6 +1,6 @@
 ---
 title: Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory
-date: 2026-02-20T12:00:00.000+00:00
+date: 2026-02-19T12:00:00.000+00:00
 lang: zh
 duration: 15min
 description: 系统梳理 Claude Code 的记忆机制，覆盖 CLAUDE.md 层级、Auto Memory 工作方式与团队沉淀实践。
