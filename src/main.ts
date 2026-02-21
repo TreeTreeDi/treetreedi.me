@@ -4,6 +4,7 @@ import FloatingVue from 'floating-vue'
 import NProgress from 'nprogress'
 import { createPinia } from 'pinia'
 import { ViteSSG } from 'vite-ssg'
+import { nextTick } from 'vue'
 import { setupRouterScroller } from 'vue-router-better-scroller'
 import { routes } from 'vue-router/auto-routes'
 import App from './App.vue'
@@ -33,6 +34,56 @@ export const createApp = ViteSSG(
     app.use(createPinia())
 
     if (isClient) {
+      let mermaidInitialized = false
+      let mermaidModulePromise: Promise<(typeof import('mermaid'))['default']> | null = null
+
+      const getMermaid = async () => {
+        if (!mermaidModulePromise) {
+          mermaidModulePromise = import('mermaid/dist/mermaid.esm.min.mjs')
+            .then(({ default: mermaid }) => mermaid)
+        }
+        return mermaidModulePromise
+      }
+
+      const renderMermaid = async () => {
+        const nodes = Array
+          .from(document.querySelectorAll<HTMLElement>('pre.mermaid'))
+          .filter(node => !node.dataset.processed)
+
+        if (!nodes.length)
+          return
+
+        const mermaid = await getMermaid()
+        if (!mermaidInitialized) {
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'strict',
+          })
+          mermaidInitialized = true
+        }
+
+        await mermaid.run({
+          nodes,
+          suppressErrors: true,
+        })
+      }
+
+      const scheduleMermaidRender = async () => {
+        await nextTick()
+        try {
+          await renderMermaid()
+        }
+        catch (error) {
+          console.error('[mermaid] failed to render charts', error)
+        }
+      }
+
+      const triggerMermaidRender = () => {
+        const delays = [0, 120, 500]
+        for (const delay of delays)
+          window.setTimeout(() => void scheduleMermaidRender(), delay)
+      }
+
       const html = document.querySelector('html')!
       setupRouterScroller(router, {
         selectors: {
@@ -54,7 +105,11 @@ export const createApp = ViteSSG(
       })
       router.afterEach(() => {
         NProgress.done()
+        triggerMermaidRender()
       })
+
+      void router.isReady()
+        .then(triggerMermaidRender)
     }
   },
 )

@@ -63,6 +63,7 @@ catalogs:
     floating-vue: ^5.2.2
     matter-attractors: ^0.1.6
     matter-js: ^0.20.0
+    mermaid: ^11.12.3
     nprogress: ^0.2.0
     pinia: ^3.0.3
     pixi.js: ^8.14.0

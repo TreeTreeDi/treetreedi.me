@@ -43,6 +43,9 @@ export default defineConfig({
       'dayjs',
       'dayjs/plugin/localizedFormat',
     ],
+    exclude: [
+      'mermaid',
+    ],
   },
   plugins: [
     UnoCSS(),
@@ -164,6 +167,20 @@ export default defineConfig({
         })
 
         md.use(GitHubAlerts)
+
+        const defaultFenceRenderer = md.renderer.rules.fence
+        md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+          const token = tokens[idx]
+          const language = token.info?.trim().split(/\s+/)[0]
+
+          if (language === 'mermaid')
+            return `<pre class="mermaid">${md.utils.escapeHtml(token.content)}</pre>\n`
+
+          if (defaultFenceRenderer)
+            return defaultFenceRenderer(tokens, idx, options, env, self)
+
+          return self.renderToken(tokens, idx, options)
+        }
       },
       frontmatterPreprocess(frontmatter, options, id, defaults) {
         (() => {

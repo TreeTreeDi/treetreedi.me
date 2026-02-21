@@ -23,6 +23,7 @@
     "floating-vue": "catalog:frontend",
     "matter-attractors": "catalog:frontend",
     "matter-js": "catalog:frontend",
+    "mermaid": "catalog:frontend",
     "nprogress": "catalog:frontend",
     "pinia": "catalog:frontend",
     "pixi.js": "catalog:frontend",

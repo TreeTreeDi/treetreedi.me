@@ -49,6 +49,18 @@ html:not(.dark) .shiki span {
   margin: 0.5em 0;
 }
 
+.prose pre.mermaid {
+  margin: 1.2em 0;
+  overflow-x: auto;
+}
+
+.prose pre.mermaid svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 .prose img {
   width: 100%;
 }
