@@ -135,6 +135,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/posts/claude-code-memory-system': RouteRecordInfo<
+      '/posts/claude-code-memory-system',
+      '/posts/claude-code-memory-system',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度': RouteRecordInfo<
       '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度',
       '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度',
@@ -173,6 +180,13 @@ declare module 'vue-router/auto-routes' {
     '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全': RouteRecordInfo<
       '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全',
       '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/posts/算法 字符串操作 & KMP 解决问题': RouteRecordInfo<
+      '/posts/算法 字符串操作 & KMP 解决问题',
+      '/posts/算法 字符串操作 & KMP 解决问题',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -321,6 +335,12 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
+    'pages/posts/claude-code-memory-system.md': {
+      routes:
+        | '/posts/claude-code-memory-system'
+      views:
+        | never
+    }
     'pages/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度.md': {
       routes:
         | '/posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度'
@@ -354,6 +374,12 @@ declare module 'vue-router/auto-routes' {
     'pages/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全.md': {
       routes:
         | '/posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全'
+      views:
+        | never
+    }
+    'pages/posts/算法 字符串操作 & KMP 解决问题.md': {
+      routes:
+        | '/posts/算法 字符串操作 & KMP 解决问题'
       views:
         | never
     }
