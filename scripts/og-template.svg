@@ -1,7 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="675" fill="none"
   viewBox="0 0 1200 675">
   <g clip-path="url(#clip0_402_22)">
-    <rect width="1200" height="675" fill="url(#pattern0)" /><text fill="#fff" xml:space="preserve"
+    <rect width="1200" height="675" fill="url(#pattern0)" />
+    <rect x="86" y="148" width="186" height="268" rx="10" fill="#090A0D" fill-opacity="0.96" />
+    <svg
+      x="112"
+      y="270"
+      width="112"
+      height="112"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#fff"
+      stroke-width="0.34"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M 5 19 C 4 12, 4 6, 5 4 C 8 3, 9 5, 8 9 C 8 13, 4 15, 2 17 C 6 15, 8 16, 11 19 C 12 14, 15 9, 14 5 C 19 4, 21 6, 20 12 C 19 17, 15 21, 12 21 C 15 18, 19 18, 22 21" />
+      <circle cx="21" cy="20" r="2" fill="#ef4444" stroke="none" />
+    </svg>
+    <rect x="248" y="242" width="330" height="84" rx="6" fill="#090A0D" fill-opacity="0.95" />
+    <text fill="#fff" fill-opacity="0.68" xml:space="preserve" style="white-space:pre" font-family="Inter" font-size="42"
+      letter-spacing="0em">
+      <tspan x="274" y="298">Shane Huang</tspan>
+    </text>
+    <text fill="#fff" xml:space="preserve"
       style="white-space:pre" font-family="Inter" font-size="50" letter-spacing="0em">
       <tspan x="274" y="382.898">{{line1}}</tspan>
       <tspan x="274" y="465">{{line2}}</tspan>
