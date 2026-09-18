@@ -93,7 +93,7 @@ CTL=.cursor/skills/verify-treetreedi/scripts/control-treetreedi
 $CTL browser navigate --path /
 $CTL browser click --role link --name "Blog"
 $CTL browser snapshot --aria --path artifacts/prove-posts/blog-list.aria.txt
-$CTL browser click --role link --name "Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory"
+$CTL browser click --role link --name "Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory" --exact false
 $CTL browser snapshot --aria --path artifacts/prove-posts/open-post.aria.txt
 $CTL browser screenshot --path artifacts/prove-posts/open-post.png
 ```
@@ -130,7 +130,7 @@ $CTL browser console --path artifacts/prove-posts/console.json
 .cursor/skills/verify-treetreedi/scripts/control-treetreedi cleanup
 ```
 
-Kills only the PID recorded in `.run/instance.json` and its descendants. Removes `instance.json` and the disposable Chrome profile. Leaves `artifacts/` and `.run/vite.log` in place.
+Kills only the PID recorded in `.run/instance.json` and its descendants. Removes `instance.json`, `.run/browser-state.json`, and the disposable Chrome profile. Leaves `artifacts/` and `.run/vite.log` in place. Each `browser` command restores the last URL from `browser-state.json` so click → snapshot stays on the same page.
 
 Never `pkill vite` or kill by process name. After a failed iteration, run cleanup before the next launch so ports and PIDs do not leak.
 

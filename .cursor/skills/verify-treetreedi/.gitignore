@@ -1,6 +1,9 @@
-artifacts/
-!artifacts/prove-posts/
-!artifacts/prove-posts/**/*.txt
-!artifacts/prove-posts/**/*.json
-!artifacts/prove-posts/**/*.md
 .run/
+
+artifacts/*
+!artifacts/prove-posts/
+
+artifacts/prove-posts/*
+!artifacts/prove-posts/*.txt
+!artifacts/prove-posts/*.json
+!artifacts/prove-posts/*.md

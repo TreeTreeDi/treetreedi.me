@@ -5,10 +5,11 @@
  * foreign vite. Cleanup kills only those PIDs and never deletes artifacts.
  */
 import { spawn } from 'node:child_process'
-import { createWriteStream } from 'node:fs'
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
   readdirSync,
   readlinkSync,
@@ -26,6 +27,7 @@ const REPO_ROOT = resolve(SKILL_DIR, '../../..')
 const RUN_DIR = join(SKILL_DIR, '.run')
 const ARTIFACTS_DIR = join(SKILL_DIR, 'artifacts')
 const INSTANCE_PATH = join(RUN_DIR, 'instance.json')
+const BROWSER_STATE_PATH = join(RUN_DIR, 'browser-state.json')
 const PLAYWRIGHT_DIR = join(RUN_DIR, 'playwright')
 const DEFAULT_HOST = '127.0.0.1'
 const PREFERRED_PORT = 3333
@@ -367,22 +369,21 @@ async function cmdLaunch(args) {
   const host = args.host || DEFAULT_HOST
   const port = await pickPort(host, args.port)
   const logPath = join(RUN_DIR, 'vite.log')
-  const log = createWriteStream(logPath, { flags: 'w' })
+  const logFd = openSync(logPath, 'w')
   const child = spawn(
     'pnpm',
     ['exec', 'vite', '--host', host, '--port', String(port), '--strictPort'],
     {
       cwd: REPO_ROOT,
       detached: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', logFd, logFd],
       env: {
         ...process.env,
         BROWSER: 'none',
       },
     },
   )
-  child.stdout.pipe(log)
-  child.stderr.pipe(log)
+  closeSync(logFd)
   child.unref()
 
   const instance = {
@@ -494,6 +495,26 @@ async function ensurePlaywright() {
   })
 }
 
+function loadBrowserState() {
+  if (!existsSync(BROWSER_STATE_PATH))
+    return null
+  try {
+    return readJson(BROWSER_STATE_PATH)
+  }
+  catch {
+    return null
+  }
+}
+
+function saveBrowserState(url) {
+  writeJson(BROWSER_STATE_PATH, { url, updatedAt: new Date().toISOString() })
+}
+
+async function waitForApp(page) {
+  await page.waitForSelector('#app', { timeout: NAV_TIMEOUT_MS })
+  await page.locator('h1, main, footer').first().waitFor({ state: 'visible', timeout: NAV_TIMEOUT_MS })
+}
+
 async function withPage(fn) {
   await ensurePlaywright()
   const instance = requireReadyInstance()
@@ -518,10 +539,17 @@ async function withPage(fn) {
   page.on('pageerror', (error) => {
     consoleLines.push({ type: 'pageerror', text: error.message })
   })
-  if (!page.url() || page.url() === 'about:blank')
-    await page.goto(instance.url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS })
+  const saved = loadBrowserState()?.url
+  const onSite = page.url().startsWith(instance.url)
+  if (!onSite) {
+    const startUrl = saved && saved.startsWith(instance.url) ? saved : instance.url
+    await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS })
+    await waitForApp(page)
+  }
   try {
-    return await fn({ page, instance, consoleLines })
+    const result = await fn({ page, instance, consoleLines })
+    saveBrowserState(page.url())
+    return result
   }
   finally {
     await context.close()
@@ -548,6 +576,7 @@ async function cmdBrowser(args) {
         waitUntil: 'domcontentloaded',
         timeout: NAV_TIMEOUT_MS,
       })
+      await waitForApp(page)
       await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS }).catch(() => {})
       printJson({
         action: 'navigate',
@@ -562,6 +591,7 @@ async function cmdBrowser(args) {
   if (action === 'click') {
     await withPage(async ({ page }) => {
       await locatorFor(page, args).first().click({ timeout: NAV_TIMEOUT_MS })
+      await waitForApp(page)
       await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS }).catch(() => {})
       printJson({
         action: 'click',
@@ -578,7 +608,10 @@ async function cmdBrowser(args) {
     const out = resolveSkillPath(args.path)
     ensureDir(dirname(out))
     await withPage(async ({ page }) => {
-      const aria = await page.locator('body').ariaSnapshot()
+      await waitForApp(page)
+      const aria = await page.locator('#app').ariaSnapshot()
+      if (!aria.trim())
+        throw new Error(`empty ARIA snapshot at ${page.url()}`)
       writeFileSync(out, `${aria}\n`)
       printJson({
         action: 'snapshot',
@@ -595,6 +628,7 @@ async function cmdBrowser(args) {
     const out = resolveSkillPath(args.path)
     ensureDir(dirname(out))
     await withPage(async ({ page }) => {
+      await waitForApp(page)
       await page.screenshot({ path: out, fullPage: true })
       printJson({
         action: 'screenshot',
@@ -645,10 +679,11 @@ async function cmdCleanup() {
     killed.push(instance.pid)
   }
   rmSync(INSTANCE_PATH, { force: true })
+  rmSync(BROWSER_STATE_PATH, { force: true })
   rmSync(join(RUN_DIR, 'chrome-profile'), { recursive: true, force: true })
   printJson({
     killed,
-    removed: [INSTANCE_PATH, join(RUN_DIR, 'chrome-profile')],
+    removed: [INSTANCE_PATH, BROWSER_STATE_PATH, join(RUN_DIR, 'chrome-profile')],
     kept: [ARTIFACTS_DIR, existsSync(join(RUN_DIR, 'vite.log')) ? join(RUN_DIR, 'vite.log') : undefined].filter(Boolean),
   })
 }

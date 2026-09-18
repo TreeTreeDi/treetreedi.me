@@ -1,0 +1,56 @@
+- banner:
+  - link "TreeTreeDi Logo":
+    - /url: /
+    - img "TreeTreeDi Logo"
+  - button "Scroll to top"
+  - navigation:
+    - link "Blog":
+      - /url: /posts
+    - link "Projects":
+      - /url: /projects
+    - link "Life":
+      - /url: /photos
+    - link "GitHub":
+      - /url: https://github.com/treetreedi
+    - link "RSS":
+      - /url: /feed.xml
+- main:
+  - heading "Blog" [level=1]
+  - article:
+    - list:
+      - text: "2026"
+      - link "Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory Feb 20 · 15min":
+        - /url: /posts/claude-code-memory-system
+        - listitem: Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory Feb 20 · 15min
+      - text: "2025"
+      - link "深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全 Nov 19 · 15min":
+        - /url: /posts/深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全
+        - listitem: 深入 dt-sql-parser 源码：如何在前端实现 SQL 解析和补全 Nov 19 · 15min
+      - link "拾遗：React 设计 从批处理到 useTransition Nov 13 · 10min":
+        - /url: /posts/拾遗：React 设计 从批处理到 useTransition
+        - listitem: 拾遗：React 设计 从批处理到 useTransition Nov 13 · 10min
+      - link "Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误 Nov 11 · 12min":
+        - /url: /posts/Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误
+        - listitem: Claude Code Hooks：长期检查 AI 代码生成的 TypeScript 错误 Nov 11 · 12min
+      - link "从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关 Nov 11 · 25min":
+        - /url: /posts/从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关
+        - listitem: 从 TFT & TTI 出发的前端分包理解：CJS&ESM、Vite 与 React Router 相关 Nov 11 · 25min
+      - link "streaming-markdown 三层 Memoization，Markdown 优化渲染速度 Nov 11 · 8min":
+        - /url: /posts/streaming-markdown 三层 Memoization，Markdown 优化渲染速度
+        - listitem: streaming-markdown 三层 Memoization，Markdown 优化渲染速度 Nov 11 · 8min
+      - link "数据中台：数据库操作模块的内存治理与数据所有权重构 Nov 10 · 20min":
+        - /url: /posts/数据中台：数据库操作模块的内存治理与数据所有权重构
+        - listitem: 数据中台：数据库操作模块的内存治理与数据所有权重构 Nov 10 · 20min
+      - link "为什么我在 Tree 组件放弃\"每次重建\"，在复杂场景改用\"按需渲染\" Nov 10 · 15min":
+        - /url: /posts/tree-component-on-demand-rendering
+        - listitem: 为什么我在 Tree 组件放弃"每次重建"，在复杂场景改用"按需渲染" Nov 10 · 15min
+      - text: "2024"
+      - link "从 0 到 1 体验 CI/CD Nov 10 · 8min":
+        - /url: /posts/ci-cd-getting-started
+        - listitem: 从 0 到 1 体验 CI/CD Nov 10 · 8min
+  - text: ">"
+  - link "cd ..":
+    - /url: /
+  - link "CC BY-NC-SA 4.0":
+    - /url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+  - text: 2025-PRESENT © TreeTreeDi
