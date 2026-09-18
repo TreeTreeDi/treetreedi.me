@@ -1,0 +1,678 @@
+#!/usr/bin/env node
+/**
+ * Isolated driver for TreeTreeDi's public Vite site.
+ * Owns one vite PID and a disposable Chrome profile. Never attaches to a
+ * foreign vite. Cleanup kills only those PIDs and never deletes artifacts.
+ */
+import { spawn } from 'node:child_process'
+import { createWriteStream } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { createServer } from 'node:net'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
+const SKILL_DIR = resolve(SCRIPT_DIR, '..')
+const REPO_ROOT = resolve(SKILL_DIR, '../../..')
+const RUN_DIR = join(SKILL_DIR, '.run')
+const ARTIFACTS_DIR = join(SKILL_DIR, 'artifacts')
+const INSTANCE_PATH = join(RUN_DIR, 'instance.json')
+const PLAYWRIGHT_DIR = join(RUN_DIR, 'playwright')
+const DEFAULT_HOST = '127.0.0.1'
+const PREFERRED_PORT = 3333
+const PORT_SCAN_END = 3399
+const LAUNCH_TIMEOUT_MS = 90_000
+const NAV_TIMEOUT_MS = 30_000
+const VIEWPORT = { width: 1280, height: 800 }
+
+function usage(exitCode = 1) {
+  process.stderr.write(`control-treetreedi — drive the TreeTreeDi Vite site for verification
+
+Usage:
+  control-treetreedi launch [--host 127.0.0.1] [--port 3333]
+  control-treetreedi doctor
+  control-treetreedi http --path / [--expect 200]
+  control-treetreedi browser navigate --path /posts
+  control-treetreedi browser click --role link --name "Blog"
+  control-treetreedi browser snapshot --aria --path artifacts/posts/list.aria.txt
+  control-treetreedi browser screenshot --path artifacts/posts/list.png
+  control-treetreedi browser console --path artifacts/posts/console.json
+  control-treetreedi cleanup
+
+Relative --path values resolve under the skill directory.
+`)
+  process.exit(exitCode)
+}
+
+function ensureDir(dir) {
+  mkdirSync(dir, { recursive: true })
+}
+
+function readJson(path) {
+  return JSON.parse(readFileSync(path, 'utf8'))
+}
+
+function writeJson(path, value) {
+  ensureDir(dirname(path))
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+function resolveSkillPath(input) {
+  if (!input)
+    throw new Error('missing --path')
+  return isAbsolute(input) ? input : resolve(SKILL_DIR, input)
+}
+
+function parseArgs(argv) {
+  const args = { _: [] }
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i]
+    if (token === '--help' || token === '-h') {
+      args.help = true
+      continue
+    }
+    if (token.startsWith('--')) {
+      const key = token.slice(2)
+      const next = argv[i + 1]
+      if (!next || next.startsWith('--')) {
+        args[key] = true
+        continue
+      }
+      args[key] = next
+      i++
+      continue
+    }
+    args._.push(token)
+  }
+  return args
+}
+
+function pidAlive(pid) {
+  if (!pid)
+    return false
+  try {
+    process.kill(pid, 0)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function readCmdline(pid) {
+  try {
+    return readFileSync(`/proc/${pid}/cmdline`, 'utf8').replace(/\0/g, ' ').trim()
+  }
+  catch {
+    return ''
+  }
+}
+
+function looksLikeOurVite(cmdline) {
+  return /\bvite\b/.test(cmdline)
+}
+
+function listPids() {
+  try {
+    return readdirSync('/proc').filter(name => /^\d+$/.test(name)).map(Number)
+  }
+  catch {
+    return []
+  }
+}
+
+function readPpid(pid) {
+  try {
+    const raw = readFileSync(`/proc/${pid}/stat`, 'utf8')
+    const close = raw.lastIndexOf(')')
+    return Number(raw.slice(close + 2).split(' ')[1])
+  }
+  catch {
+    return null
+  }
+}
+
+function collectDescendants(rootPid) {
+  const kidsByParent = new Map()
+  for (const pid of listPids()) {
+    const ppid = readPpid(pid)
+    if (ppid == null)
+      continue
+    const list = kidsByParent.get(ppid) || []
+    list.push(pid)
+    kidsByParent.set(ppid, list)
+  }
+  const out = [rootPid]
+  const queue = [rootPid]
+  while (queue.length) {
+    const current = queue.shift()
+    for (const child of kidsByParent.get(current) || []) {
+      if (!out.includes(child)) {
+        out.push(child)
+        queue.push(child)
+      }
+    }
+  }
+  return out
+}
+
+function processTreeHasVite(rootPid) {
+  return collectDescendants(rootPid).some(pid => looksLikeOurVite(readCmdline(pid)))
+}
+
+function hexIpPort(host, port) {
+  const hexPort = port.toString(16).toUpperCase().padStart(4, '0')
+  const hostParts = host.split('.').map(n => Number(n))
+  const hexHost = Buffer.from(hostParts.reverse()).toString('hex').toUpperCase()
+  return { hexHost, hexPort }
+}
+
+function listeningInodes(host, port) {
+  const { hexHost, hexPort } = hexIpPort(host, port)
+  const inodes = new Set()
+  let text = ''
+  try {
+    text = readFileSync('/proc/net/tcp', 'utf8')
+  }
+  catch {
+    return inodes
+  }
+  for (const line of text.split('\n').slice(1)) {
+    const cols = line.trim().split(/\s+/)
+    if (cols.length < 10)
+      continue
+    const [addr, p] = cols[1].split(':')
+    if (p !== hexPort)
+      continue
+    if (addr !== hexHost && addr !== '00000000')
+      continue
+    inodes.add(cols[9])
+  }
+  return inodes
+}
+
+function pidsForInodes(inodes) {
+  if (!inodes.size)
+    return []
+  const pids = []
+  for (const pid of listPids()) {
+    let fds = []
+    try {
+      fds = readdirSync(`/proc/${pid}/fd`)
+    }
+    catch {
+      continue
+    }
+    for (const fd of fds) {
+      let target = ''
+      try {
+        target = readlinkSync(`/proc/${pid}/fd/${fd}`)
+      }
+      catch {
+        continue
+      }
+      const match = target.match(/^socket:\[(\d+)\]$/)
+      if (match && inodes.has(match[1]))
+        pids.push(pid)
+    }
+  }
+  return [...new Set(pids)]
+}
+
+function portOwnerPids(port, host = DEFAULT_HOST) {
+  return pidsForInodes(listeningInodes(host, port))
+}
+
+function canListen(host, port) {
+  return new Promise((resolveListen) => {
+    const server = createServer()
+    server.unref()
+    server.once('error', () => resolveListen(false))
+    server.once('listening', () => {
+      server.close(() => resolveListen(true))
+    })
+    server.listen(port, host)
+  })
+}
+
+async function pickPort(host, requested) {
+  if (requested) {
+    const port = Number(requested)
+    if (!(await canListen(host, port)))
+      throw new Error(`port ${host}:${port} is already bound; pick another or stop the foreign listener`)
+    return port
+  }
+  if (await canListen(host, PREFERRED_PORT))
+    return PREFERRED_PORT
+  for (let port = PREFERRED_PORT + 1; port <= PORT_SCAN_END; port++) {
+    if (await canListen(host, port))
+      return port
+  }
+  throw new Error(`no free port on ${host} between ${PREFERRED_PORT} and ${PORT_SCAN_END}`)
+}
+
+function loadInstance() {
+  if (!existsSync(INSTANCE_PATH))
+    return null
+  try {
+    return readJson(INSTANCE_PATH)
+  }
+  catch {
+    return null
+  }
+}
+
+function instanceUrl(instance, path = '/') {
+  const suffix = path.startsWith('/') ? path : `/${path}`
+  return `${instance.url}${suffix}`
+}
+
+function sleep(ms) {
+  return new Promise(resolveSleep => setTimeout(resolveSleep, ms))
+}
+
+function fail(message) {
+  process.stderr.write(`${message}\n`)
+  process.exit(1)
+}
+
+function printJson(value) {
+  process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+}
+
+async function httpProbe(url) {
+  const started = Date.now()
+  try {
+    const res = await fetch(url, { redirect: 'manual' })
+    const body = await res.text()
+    return {
+      ok: true,
+      status: res.status,
+      ms: Date.now() - started,
+      url,
+      body,
+    }
+  }
+  catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      ms: Date.now() - started,
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
+async function waitForHttp(url, timeoutMs) {
+  const deadline = Date.now() + timeoutMs
+  let last
+  while (Date.now() < deadline) {
+    last = await httpProbe(url)
+    if (last.ok && last.status >= 200 && last.status < 400)
+      return last
+    await sleep(400)
+  }
+  throw new Error(`timed out waiting for ${url} (${last?.error || last?.status || 'no response'})`)
+}
+
+function killTree(pid, signal = 'SIGTERM') {
+  if (!pidAlive(pid))
+    return
+  for (const child of collectDescendants(pid).reverse()) {
+    try {
+      process.kill(child, signal)
+    }
+    catch {
+      // already gone
+    }
+  }
+  try {
+    process.kill(-pid, signal)
+  }
+  catch {
+    // process group may already be gone
+  }
+}
+
+function requireReadyInstance() {
+  const instance = loadInstance()
+  if (!instance)
+    fail('no instance.json; run launch first')
+  if (!pidAlive(instance.pid) || !processTreeHasVite(instance.pid))
+    fail(`pid ${instance.pid} is not a live verification vite; run launch`)
+  return instance
+}
+
+async function cmdLaunch(args) {
+  ensureDir(RUN_DIR)
+  const existing = loadInstance()
+  if (existing && pidAlive(existing.pid) && processTreeHasVite(existing.pid))
+    fail(`verification vite already running as pid ${existing.pid} on ${existing.url}; run cleanup first`)
+  if (existing)
+    rmSync(INSTANCE_PATH, { force: true })
+
+  if (!existsSync(join(REPO_ROOT, 'node_modules/.bin/vite')))
+    fail(`vite is not installed; from ${REPO_ROOT} run: pnpm install`)
+
+  const host = args.host || DEFAULT_HOST
+  const port = await pickPort(host, args.port)
+  const logPath = join(RUN_DIR, 'vite.log')
+  const log = createWriteStream(logPath, { flags: 'w' })
+  const child = spawn(
+    'pnpm',
+    ['exec', 'vite', '--host', host, '--port', String(port), '--strictPort'],
+    {
+      cwd: REPO_ROOT,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        BROWSER: 'none',
+      },
+    },
+  )
+  child.stdout.pipe(log)
+  child.stderr.pipe(log)
+  child.unref()
+
+  const instance = {
+    pid: child.pid,
+    host,
+    port,
+    url: `http://${host}:${port}`,
+    cwd: REPO_ROOT,
+    logPath,
+    startedAt: new Date().toISOString(),
+  }
+  writeJson(INSTANCE_PATH, instance)
+
+  try {
+    await waitForHttp(instance.url, LAUNCH_TIMEOUT_MS)
+  }
+  catch (error) {
+    killTree(child.pid)
+    rmSync(INSTANCE_PATH, { force: true })
+    fail(error instanceof Error ? error.message : String(error))
+  }
+
+  printJson({
+    status: 'ready',
+    ...instance,
+    note: port === PREFERRED_PORT
+      ? `bound preferred ${DEFAULT_HOST}:${PREFERRED_PORT}`
+      : `preferred ${PREFERRED_PORT} was busy; bound ${host}:${port}`,
+  })
+}
+
+async function cmdDoctor() {
+  const instance = loadInstance()
+  if (!instance)
+    fail('no instance.json; this run did not launch a verification vite')
+
+  const alive = pidAlive(instance.pid)
+  const cmdline = alive ? readCmdline(instance.pid) : ''
+  const tree = alive ? collectDescendants(instance.pid) : []
+  const viteOwned = alive && processTreeHasVite(instance.pid)
+  const owners = portOwnerPids(instance.port, instance.host)
+  const ownedByUs = owners.some(pid => tree.includes(pid))
+  const probe = await httpProbe(instance.url)
+  const bodyHasIdentity = Boolean(probe.body && /TreeTreeDi/i.test(probe.body))
+  const ready = Boolean(
+    alive
+    && viteOwned
+    && (ownedByUs || owners.length === 0)
+    && probe.ok
+    && probe.status === 200
+    && bodyHasIdentity,
+  )
+
+  printJson({
+    url: instance.url,
+    pid: instance.pid,
+    alive,
+    cmdline,
+    viteOwned,
+    port: instance.port,
+    portOwners: owners,
+    ownedByUs,
+    httpStatus: probe.status,
+    bodyHasIdentity,
+    ready,
+  })
+  if (!ready)
+    process.exit(1)
+}
+
+async function cmdHttp(args) {
+  const instance = requireReadyInstance()
+  const path = args.path || '/'
+  const expect = args.expect != null ? Number(args.expect) : 200
+  const probe = await httpProbe(instanceUrl(instance, path))
+  const result = {
+    url: probe.url,
+    status: probe.status,
+    ms: probe.ms,
+    expect,
+    ok: probe.ok && probe.status === expect,
+    identity: Boolean(probe.body && /TreeTreeDi/i.test(probe.body)),
+  }
+  printJson(result)
+  if (!result.ok)
+    process.exit(1)
+}
+
+async function ensurePlaywright() {
+  const marker = join(PLAYWRIGHT_DIR, 'node_modules/playwright-core/index.mjs')
+  if (existsSync(marker))
+    return
+  ensureDir(PLAYWRIGHT_DIR)
+  writeFileSync(join(PLAYWRIGHT_DIR, 'package.json'), `${JSON.stringify({
+    name: 'verify-treetreedi-playwright',
+    private: true,
+  }, null, 2)}\n`)
+  await new Promise((resolveInstall, reject) => {
+    const child = spawn('npm', ['install', '--omit=dev', 'playwright-core@1.55.0'], {
+      cwd: PLAYWRIGHT_DIR,
+      stdio: 'inherit',
+    })
+    child.on('exit', (code) => {
+      if (code === 0)
+        resolveInstall()
+      else
+        reject(new Error(`npm install playwright-core failed with ${code}`))
+    })
+  })
+}
+
+async function withPage(fn) {
+  await ensurePlaywright()
+  const instance = requireReadyInstance()
+  const { chromium } = await import(join(PLAYWRIGHT_DIR, 'node_modules/playwright-core/index.mjs'))
+  const userDataDir = join(RUN_DIR, 'chrome-profile')
+  ensureDir(userDataDir)
+  const context = await chromium.launchPersistentContext(userDataDir, {
+    channel: 'chrome',
+    headless: true,
+    viewport: VIEWPORT,
+    args: [
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
+    ],
+  })
+  const page = context.pages()[0] || await context.newPage()
+  const consoleLines = []
+  page.on('console', (msg) => {
+    consoleLines.push({ type: msg.type(), text: msg.text() })
+  })
+  page.on('pageerror', (error) => {
+    consoleLines.push({ type: 'pageerror', text: error.message })
+  })
+  if (!page.url() || page.url() === 'about:blank')
+    await page.goto(instance.url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS })
+  try {
+    return await fn({ page, instance, consoleLines })
+  }
+  finally {
+    await context.close()
+  }
+}
+
+function locatorFor(page, args) {
+  if (!args.role)
+    throw new Error('browser click requires --role')
+  if (!args.name)
+    throw new Error('browser click requires --name')
+  return page.getByRole(args.role, { name: args.name, exact: args.exact !== 'false' })
+}
+
+async function cmdBrowser(args) {
+  const action = args._[1]
+  if (!action)
+    usage()
+
+  if (action === 'navigate') {
+    const path = args.path || '/'
+    await withPage(async ({ page, instance }) => {
+      const res = await page.goto(instanceUrl(instance, path), {
+        waitUntil: 'domcontentloaded',
+        timeout: NAV_TIMEOUT_MS,
+      })
+      await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS }).catch(() => {})
+      printJson({
+        action: 'navigate',
+        url: page.url(),
+        status: res?.status() ?? 0,
+        title: await page.title(),
+      })
+    })
+    return
+  }
+
+  if (action === 'click') {
+    await withPage(async ({ page }) => {
+      await locatorFor(page, args).first().click({ timeout: NAV_TIMEOUT_MS })
+      await page.waitForLoadState('networkidle', { timeout: NAV_TIMEOUT_MS }).catch(() => {})
+      printJson({
+        action: 'click',
+        role: args.role,
+        name: args.name,
+        url: page.url(),
+        title: await page.title(),
+      })
+    })
+    return
+  }
+
+  if (action === 'snapshot') {
+    const out = resolveSkillPath(args.path)
+    ensureDir(dirname(out))
+    await withPage(async ({ page }) => {
+      const aria = await page.locator('body').ariaSnapshot()
+      writeFileSync(out, `${aria}\n`)
+      printJson({
+        action: 'snapshot',
+        path: out,
+        url: page.url(),
+        title: await page.title(),
+        bytes: Buffer.byteLength(aria),
+      })
+    })
+    return
+  }
+
+  if (action === 'screenshot') {
+    const out = resolveSkillPath(args.path)
+    ensureDir(dirname(out))
+    await withPage(async ({ page }) => {
+      await page.screenshot({ path: out, fullPage: true })
+      printJson({
+        action: 'screenshot',
+        path: out,
+        url: page.url(),
+        title: await page.title(),
+      })
+    })
+    return
+  }
+
+  if (action === 'console') {
+    const out = args.path ? resolveSkillPath(args.path) : null
+    await withPage(async ({ page, consoleLines }) => {
+      const payload = {
+        url: page.url(),
+        title: await page.title(),
+        messages: consoleLines,
+        errors: consoleLines.filter(line => line.type === 'error' || line.type === 'pageerror'),
+      }
+      if (out) {
+        ensureDir(dirname(out))
+        writeJson(out, payload)
+      }
+      printJson({
+        action: 'console',
+        path: out,
+        errorCount: payload.errors.length,
+        messages: payload.messages,
+      })
+    })
+    return
+  }
+
+  usage()
+}
+
+async function cmdCleanup() {
+  const instance = loadInstance()
+  const killed = []
+  if (instance?.pid && pidAlive(instance.pid)) {
+    killTree(instance.pid, 'SIGTERM')
+    const deadline = Date.now() + 5000
+    while (pidAlive(instance.pid) && Date.now() < deadline)
+      await sleep(100)
+    if (pidAlive(instance.pid))
+      killTree(instance.pid, 'SIGKILL')
+    killed.push(instance.pid)
+  }
+  rmSync(INSTANCE_PATH, { force: true })
+  rmSync(join(RUN_DIR, 'chrome-profile'), { recursive: true, force: true })
+  printJson({
+    killed,
+    removed: [INSTANCE_PATH, join(RUN_DIR, 'chrome-profile')],
+    kept: [ARTIFACTS_DIR, existsSync(join(RUN_DIR, 'vite.log')) ? join(RUN_DIR, 'vite.log') : undefined].filter(Boolean),
+  })
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2))
+  if (args.help)
+    usage(0)
+  const command = args._[0]
+  if (!command)
+    usage()
+  if (command === 'launch')
+    return cmdLaunch(args)
+  if (command === 'doctor')
+    return cmdDoctor()
+  if (command === 'http')
+    return cmdHttp(args)
+  if (command === 'browser')
+    return cmdBrowser(args)
+  if (command === 'cleanup')
+    return cmdCleanup()
+  usage()
+}
+
+main().catch((error) => {
+  fail(error instanceof Error ? error.stack || error.message : String(error))
+})
