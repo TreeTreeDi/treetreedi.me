@@ -130,7 +130,7 @@ if [ -n "$version" ] && [ "$os" != unknown ] && [ "$arch" != unknown ]; then
     exit 127
   fi
   # Check the actual staging file, not just directory existence: a cache from
-  // an earlier run can be readable but no longer writable inside a sandbox.
+  # an earlier run can be readable but no longer writable inside a sandbox.
   if ! (umask 077; : > "$tmp") 2>/dev/null; then
     echo "impeccable: engine $version is not installed; cannot write to cache directory: $cache_root/bin/$version" >&2
     setup_help
