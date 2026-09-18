@@ -1,0 +1,15 @@
+{
+  "url": "http://127.0.0.1:3333",
+  "pid": 3683,
+  "alive": true,
+  "cmdline": "node /home/ubuntu/.nvm/versions/node/v22.22.2/bin/pnpm exec vite --host 127.0.0.1 --port 3333 --strictPort",
+  "viteOwned": true,
+  "port": 3333,
+  "portOwners": [
+    3705
+  ],
+  "ownedByUs": true,
+  "httpStatus": 200,
+  "bodyHasIdentity": true,
+  "ready": true
+}

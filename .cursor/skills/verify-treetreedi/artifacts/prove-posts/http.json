@@ -1,0 +1,26 @@
+{
+  "home": {
+    "url": "http://127.0.0.1:3333/",
+    "status": 200,
+    "ms": 26,
+    "expect": 200,
+    "ok": true,
+    "identity": true
+  },
+  "posts": {
+    "url": "http://127.0.0.1:3333/posts",
+    "status": 200,
+    "ms": 27,
+    "expect": 200,
+    "ok": true,
+    "identity": true
+  },
+  "article": {
+    "url": "http://127.0.0.1:3333/posts/claude-code-memory-system",
+    "status": 200,
+    "ms": 27,
+    "expect": 200,
+    "ok": true,
+    "identity": true
+  }
+}

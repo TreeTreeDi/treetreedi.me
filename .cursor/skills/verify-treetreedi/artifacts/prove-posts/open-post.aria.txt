@@ -1,0 +1,395 @@
+- banner:
+  - link "TreeTreeDi Logo":
+    - /url: /
+    - img "TreeTreeDi Logo"
+  - button "Scroll to top"
+  - navigation:
+    - link "Blog":
+      - /url: /posts
+    - link "Projects":
+      - /url: /projects
+    - link "Life":
+      - /url: /photos
+    - link "GitHub":
+      - /url: https://github.com/treetreedi
+    - link "RSS":
+      - /url: /feed.xml
+- main:
+  - heading "Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory" [level=1]
+  - paragraph: Feb 20 · 15min
+  - article:
+    - list:
+      - listitem:
+        - link "1. 背景与痛点：为什么必须接管记忆系统？":
+          - /url: "#_1-背景与痛点：为什么必须接管记忆系统？"
+      - listitem:
+        - link "2. 核心架构：规范契约 vs 经验日志":
+          - /url: "#_2-核心架构：规范契约-vs-经验日志"
+      - listitem:
+        - link "3. 记忆文件放在哪里：六个作用域层级":
+          - /url: "#_3-记忆文件放在哪里：六个作用域层级"
+      - listitem:
+        - link "4. 加载机制：基于目录树的冒泡与懒加载":
+          - /url: "#_4-加载机制：基于目录树的冒泡与懒加载"
+        - list:
+          - listitem:
+            - link "4.1 向上递归加载（启动时全量挂载）":
+              - /url: "#_4-1-向上递归加载（启动时全量挂载）"
+          - listitem:
+            - link "4.2 子目录的按需加载（懒加载策略）":
+              - /url: "#_4-2-子目录的按需加载（懒加载策略）"
+      - listitem:
+        - link "5. Auto Memory：AI 视角的工程笔记":
+          - /url: "#_5-auto-memory：ai-视角的工程笔记"
+        - list:
+          - listitem:
+            - link "5.1 存储寻址机制":
+              - /url: "#_5-1-存储寻址机制"
+          - listitem:
+            - link "5.2 MEMORY.md 的 200 行调度法则":
+              - /url: "#_5-2-memory-md-的-200-行调度法则"
+          - listitem:
+            - link "5.3 写入时机与人工干预":
+              - /url: "#_5-3-写入时机与人工干预"
+      - listitem:
+        - link "6. 高阶约束：模块化规则与过滤":
+          - /url: "#_6-高阶约束：模块化规则与过滤"
+        - list:
+          - listitem:
+            - link "6.1 @ 引用语法":
+              - /url: "#_6-1-引用语法"
+          - listitem:
+            - link "6.2 YAML 路径过滤 (Glob Filtering) - 核心特性":
+              - /url: "#_6-2-yaml-路径过滤-glob-filtering-核心特性"
+      - listitem:
+        - link "7. 架构思考：记忆系统的生命周期与演进复盘":
+          - /url: "#_7-架构思考：记忆系统的生命周期与演进复盘"
+      - listitem:
+        - link "8. 附录：原生体系与第三方社区方案的对比":
+          - /url: "#_8-附录：原生体系与第三方社区方案的对比"
+    - heading "1. 背景与痛点：为什么必须接管记忆系统？" [level=2]
+    - paragraph: 每一次打开 Claude Code，面对的都是一个全新的上下文窗口。
+    - paragraph: 在日常开发中，我们经常遇到这样的崩溃场景：花了一个小时和 Claude 一起排查了一个深水区的 Bug，但在 Session 被 Compact（压缩）之后，这段宝贵的排错过程可能只被浓缩成了一句冷冰冰的 "fixed XX issue"。下次打开新对话时，Claude 对你的项目结构、技术栈、踩过的坑再次一无所知。
+    - paragraph: 这就导致了一个极具摩擦力的开发日常——你每次开始工作都要向它重新解释："这个项目必须用 pnpm"、"测试前需要启动本地 Redis"、"组件传参严禁使用 any 类型"…
+    - paragraph:
+      - strong: 这些反复的解释是纯粹的摩擦，在高效的工程链路中不应该存在。
+    - paragraph: 为了解决这个问题，Claude Code 提供了两种方向相反但高度互补的解法：
+    - list:
+      - listitem:
+        - paragraph:
+          - strong:
+            - text: 静态声明 (
+            - code: CLAUDE.md
+            - text: )
+          - text: ：由开发者主动编写，明确告知 Claude 项目的规范与红线。
+      - listitem:
+        - paragraph:
+          - strong: 动态捕获 (Auto Memory)
+          - text: ：由 Claude 在工作流中自己给自己记的“笔记”，沉淀实践经验。
+    - paragraph: 理解这两套系统的加载规则与运作逻辑，是让 Claude 从“日抛型助手”进化为“懂你工作流的工程老兵”的关键所在。
+    - heading "2. 核心架构：规范契约 vs 经验日志" [level=2]
+    - paragraph: 在系统设计上，这两种记忆机制承担着完全不同的工程职责。
+    - paragraph:
+      - code: CLAUDE.md
+      - text: 系列是你维护的，内容是
+      - strong: 规范性
+      - text: 的。这些是稳定的、可以被团队共享的约定，适合通过 Git 追踪和版本化。 Auto Memory 是 Claude 自己维护的，内容是
+      - strong: 经验性
+      - text: 的。这些是从实践中模糊积累的，不适合手动整理，让 AI 自己记录更符合自然直觉。
+    - table:
+      - rowgroup:
+        - row "维度 CLAUDE.md (静态声明) Auto Memory (动态捕获)":
+          - cell "维度"
+          - cell "CLAUDE.md (静态声明)"
+          - cell "Auto Memory (动态捕获)"
+      - rowgroup:
+        - row "谁来写 开发者 Claude 引擎":
+          - cell "谁来写":
+            - strong: 谁来写
+          - cell "开发者"
+          - cell "Claude 引擎"
+        - row "写什么 规范、约定、核心指令、架构说明 调试经验、代码模式、个人习惯与偏好":
+          - cell "写什么":
+            - strong: 写什么
+          - cell "规范、约定、核心指令、架构说明"
+          - cell "调试经验、代码模式、个人习惯与偏好"
+        - row "更新时机 人工评估并修改 AI 运行时自动判断 / 用户显式指令":
+          - cell "更新时机":
+            - strong: 更新时机
+          - cell "人工评估并修改"
+          - cell "AI 运行时自动判断 / 用户显式指令"
+        - row "团队共享 可以（通过 Git 提交） 不可以（存储于本地沙盒，属于私有记忆）":
+          - cell "团队共享":
+            - strong: 团队共享
+          - cell "可以（通过 Git 提交）":
+            - strong: 可以
+            - text: （通过 Git 提交）
+          - cell "不可以（存储于本地沙盒，属于私有记忆）":
+            - strong: 不可以
+            - text: （存储于本地沙盒，属于私有记忆）
+        - row "控制精度 绝对精准，严格遵循 模糊累积，依赖大模型检索":
+          - cell "控制精度":
+            - strong: 控制精度
+          - cell "绝对精准，严格遵循"
+          - cell "模糊累积，依赖大模型检索"
+    - paragraph: 这两套机制在每次 Session 开始时并行加载，共同构成 Claude 对当前项目的全盘背景知识。
+    - heading "3. 记忆文件放在哪里：六个作用域层级" [level=2]
+    - paragraph:
+      - code: CLAUDE.md
+      - text: 体系的配置文件按作用域由广到窄划分为六种位置。
+      - strong: 优先级规则是：越具体的配置优先级越高。
+      - text: 项目级的约定会覆盖用户级，用户级会覆盖组织级。
+    - list:
+      - listitem:
+        - paragraph:
+          - strong: 组织级
+          - text: ：由 IT 部门或 DevOps 统一部署，覆盖组织内所有用户所有项目。适合公司层面的编码规范、安全策略。
+        - list:
+          - listitem:
+            - paragraph:
+              - emphasis: macOS
+              - text: ":"
+              - code: /Library/Application Support/ClaudeCode/CLAUDE.md
+          - listitem:
+            - paragraph:
+              - emphasis: Linux
+              - text: ":"
+              - code: /etc/claude-code/CLAUDE.md
+          - listitem:
+            - paragraph:
+              - emphasis: Windows
+              - text: ":"
+              - code: C:\Program Files\ClaudeCode\CLAUDE.md
+      - listitem:
+        - paragraph:
+          - strong: 用户级
+          - text: ：你个人的偏好设置，覆盖你在所有项目中的行为（如喜欢的代码风格、常用 CLI 工具）。
+          - code: ~/.claude/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - strong: 用户规则
+          - text: ：用户级配置的模块化版本，按主题拆分成多个文件（如
+          - code: preferences.md
+          - text: ","
+          - code: workflows.md
+          - text: ）。
+          - code: ~/.claude/rules/*.md
+      - listitem:
+        - paragraph:
+          - strong: 项目级（最常用）
+          - text: ：当前项目的团队共享约定。通过 Git 追踪，团队成员都会加载相同的规范。
+          - code: ./CLAUDE.md
+          - text: 或
+          - code: ./.claude/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - strong: 项目规则
+          - text: ：项目级记忆的模块化版本。支持按文件路径精确过滤加载（后文详述）。
+          - code: ./.claude/rules/*.md
+      - listitem:
+        - paragraph:
+          - strong: 本地项目级
+          - text: ：只对你本人生效的私有配置（例如你个人的沙盒 URL、私有数据库账号）。
+          - code: ./CLAUDE.local.md
+          - text: （注：Claude Code 会自动尝试将此文件加入
+          - code: .gitignore
+          - text: ）。
+    - heading "4. 加载机制：基于目录树的冒泡与懒加载" [level=2]
+    - paragraph:
+      - text: Claude Code 的记忆加载有一个极其核心的设计原则：
+      - strong: 从当前工作目录（CWD）出发。
+    - heading "4.1 向上递归加载（启动时全量挂载）" [level=3]
+    - paragraph:
+      - text: 启动时，Claude Code 从 CWD 开始，向上递归遍历父目录，一直到系统根目录（不含
+      - code: /
+      - text: ），把沿途所有符合格式的
+      - code: CLAUDE.md
+      - text: 及其变体全量加载进上下文。
+    - paragraph:
+      - text: 假设你在
+      - code: /Users/you/code/myapp/src/api
+      - text: 下启动 Claude Code，它会依次检查并加载：
+    - list:
+      - listitem:
+        - paragraph:
+          - code: /Users/you/code/myapp/src/api/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - code: /Users/you/code/myapp/src/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - code: /Users/you/code/myapp/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - code: /Users/you/code/CLAUDE.md
+      - listitem:
+        - paragraph:
+          - text: 全局配置如
+          - code: ~/.claude/CLAUDE.md
+    - paragraph:
+      - emphasis:
+        - text: 架构思考：这个设计对大型 Monorepo 极具价值。可以在根目录写通用的 DevOps 规范，在
+        - code: frontend/
+        - text: 子目录写前端专属规范。在哪个目录下启动，就自动获得对应层级的全部上下文。
+    - heading "4.2 子目录的按需加载（懒加载策略）" [level=3]
+    - paragraph:
+      - text: 工作目录
+      - strong: 下方
+      - text: 的子目录里如果有
+      - code: CLAUDE.md
+      - text: ，行为则完全不同：
+      - strong: Claude Code 不会在启动时主动加载它们。
+    - paragraph:
+      - text: 只有当 Claude 在会话中实际读取了那个子目录里的文件，才会触发加载对应的
+      - code: CLAUDE.md
+      - text: 。
+      - emphasis: 底层思考：理由很直接。一个大型项目可能有几十个微服务子模块，每个都有自己的规范。如果全部在启动时加载，上下文窗口会立刻被无效信息撑满。懒加载保证了只有“真正在处理的模块”，其规范才会进入上下文。
+    - paragraph: 在 claude mem 这个开源项目中就用到了这样的一个观点，他会在每一个修改的文件同一级目录里创建一个记忆文件，来提示这个文件在什么时候经过了哪些更改，来方便AI进行读取， 就符合了 Claude 会话读取的策略。
+    - heading "5. Auto Memory：AI 视角的工程笔记" [level=2]
+    - paragraph: Auto Memory 是 2.1.x 版本引入的核心功能。
+    - heading "5.1 存储寻址机制" [level=3]
+    - paragraph:
+      - text: 每个项目都有独立隔离的 Auto Memory 目录，位置在：
+      - code: ~/.claude/projects/<project-hash>/memory/
+    - list:
+      - listitem:
+        - paragraph:
+          - strong: 哈希逻辑
+          - text: ：
+          - code: <project-hash>
+          - text: 是将 Git 仓库根目录绝对路径中的
+          - code: /
+          - text: 替换成
+          - code: "-"
+          - text: 生成的。例如
+          - code: /Users/you/code/myapp
+          - text: 变成
+          - code: "-Users-you-code-myapp"
+          - text: 。
+      - listitem:
+        - paragraph:
+          - strong: 边界情况梳理
+          - text: ：
+        - list:
+          - listitem:
+            - paragraph:
+              - text: 同一个 Git repo 下的所有子目录，无论你在哪工作，均
+              - strong: 共用同一份
+              - text: Auto Memory。
+          - listitem:
+            - paragraph:
+              - strong: Git Worktree 各自有独立的目录
+              - text: ，不互通。
+          - listitem:
+            - paragraph: 若 CWD 不在 Git 仓库内，直接用当前工作目录路径作为标识。
+    - heading "5.2 MEMORY.md 的 200 行调度法则" [level=3]
+    - paragraph: 记忆目录并非单一文件，而是由 Claude 自主维护的文件树：
+    - code: "memory/ ├── MEMORY.md # 入口文件，索引 + 摘要 ├── debugging.md # 专项：调试经验记录 └── api-conventions.md # 专项：API 约定"
+    - paragraph:
+      - code: MEMORY.md
+      - text: 是主索引。每次 Session 启动时，
+      - strong: 系统只会将其前 200 行自动注入系统提示词
+      - text: 。Claude 被明确设定为必须保持此文件精简。 当积累的内容逼近上限，Claude 会自动触发重构，将长文本拆分转移到
+      - code: debugging.md
+      - text: 等专项文件中，并在主索引中留下文件路径和短摘要。需要深挖时，Claude 会调用标准文件工具去读取专项文件。
+    - heading "5.3 写入时机与人工干预" [level=3]
+    - paragraph:
+      - text: Claude 在工作时会自行判断并静默写入（例如发现重复代码模式、解决复杂链路 Bug 后）。但这同样支持自然语言的
+      - strong: 显式强干预
+      - text: ：
+    - blockquote:
+      - paragraph: “记住我们这个项目用 pnpm，不是 npm” “把这个记到记忆里：API 测试前需要先启动本地 Redis” “下次记得：这个组件不能直接修改 props，必须通过回调”
+    - paragraph:
+      - text: 此外，随时可在对话中输入
+      - code: /memory
+      - text: 命令，呼出文件选择器手动删改这些记忆文件。
+    - heading "6. 高阶约束：模块化规则与过滤" [level=2]
+    - paragraph:
+      - text: 当项目的
+      - code: CLAUDE.md
+      - text: 越来越长时，团队维护成本会剧增，不同主题混杂极易引发 Git 冲突。官方的终极解法是
+      - code: .claude/rules/
+      - text: 。
+    - heading "6.1 @ 引用语法" [level=3]
+    - paragraph:
+      - code: CLAUDE.md
+      - text: 支持直接使用
+      - code: "@path"
+      - text: 引入其他文件内容，避免信息堆砌（最高递归 5 层）：
+    - code: "项目概述见 @README.md # 开发规范 - Git 工作流详见 @docs/git-instructions.md - API 设计规范 @docs/api-design.md"
+    - paragraph:
+      - emphasis:
+        - text: (注：首次跨域引用如
+        - code: ~/.claude/
+        - text: 路径时，系统会弹出授权对话框防范越权读取。)
+    - heading "6.2 YAML 路径过滤 (Glob Filtering) - 核心特性" [level=3]
+    - paragraph:
+      - code: .claude/rules/*.md
+      - text: 目录下所有的文件都会被发现，但其最具价值的特性是支持用 YAML Frontmatter 限定加载范围。
+    - paragraph:
+      - strong: 只有当 Claude 在处理匹配该路径的文件时，这个规则文件才会进入上下文：
+    - code: "--- paths: - \"src/api/**/*.ts\" - \"lib/**/*.ts\" --- # API 开发规范 - 所有端点必须包含输入验证，严禁直接信任客户端数据。 - 错误响应必须遵循统一格式：`{ error: string, code: string }`"
+    - paragraph:
+      - emphasis: 底层思考：路径过滤的终极目的是“隔离噪音”。处理前端组件时不需要加载数据库操作规范，按需匹配让每一次的 System Prompt 都保持最高的纯净度与信息密度。
+    - heading "7. 架构思考：记忆系统的生命周期与演进复盘" [level=2]
+    - paragraph: 这套系统的长期使用，必须建立在一种健康的“知识演进路径”上。如果长期不整理，会出现两大灾难：
+    - list:
+      - listitem:
+        - paragraph:
+          - strong: 记忆污染
+          - text: ：Auto Memory 积累了大量过期设定。
+          - strong: 在 AI 辅助编程中，过期的记忆比没有记忆更危险
+          - text: ，因为 Claude 会把它当成不可动摇的当前事实，从而引发顽固的幻觉（Hallucination）。
+      - listitem:
+        - paragraph:
+          - strong: 知识孤岛
+          - text: ：有巨大价值的工程经验只存在于你本地的 Auto Memory 里，团队其他人根本无从知晓。
+    - paragraph:
+      - strong: 最佳实践：定期梳理与“经验上卷”
+    - paragraph:
+      - text: 我们需要将 Auto Memory 视作“草稿本”，将
+      - code: CLAUDE.md
+      - text: 视作“法典”。它们的演化路径应该是单向向上的：
+    - code: 实践中遇到问题，解决问题 ↓ Auto Memory 自动捕获并记录（本地私有，项目级粗颗粒度） ↓ 定期复盘（执行 /memory 检视） ↓ 提取 / 舍弃过期废料 发现具有团队共性价值的通用规律（如环境配置陷阱、特定组件用法） ↓ 抽象与提炼 写入项目级的 CLAUDE.md 或 .claude/rules/*.md 中 ↓ 提交 Git，实现团队共享与版本化（知识沉淀完毕）
+    - paragraph:
+      - text: Auto Memory 是敏捷的工作日志，
+      - code: CLAUDE.md
+      - text: 是沉淀下来的稳定契约。两者配合，才能既记住当下瞬息万变的开发细节，又能传承长治久安的团队规范。
+    - heading "8. 附录：原生体系与第三方社区方案的对比" [level=2]
+    - paragraph:
+      - text: 除了官方内置的上述两套机制，目前社区中也活跃着诸如
+      - link "claude-mem.ai":
+        - /url: https://claude-mem.ai/
+      - text: 这样的第三方开源解决方案。为了防止混淆，需明确其边界：
+    - list:
+      - listitem:
+        - paragraph:
+          - strong: 官方原生架构 (本文重点)
+          - text: ：基于纯文本（Markdown）、基于目录树冒泡与大模型自身的上下文窗口（200行机制）进行轻量级索引。优势是无缝集成、零依赖配置。
+      - listitem:
+        - paragraph:
+          - strong: 第三方扩展 (如 claude-mem)
+          - text: ：通常基于本地 SQLite + 向量数据库（如 Chroma），通过拦截 Claude Code 的生命周期 Hook，对海量历史对话进行向量化持久存储与语义检索。
+      - listitem:
+        - paragraph:
+          - strong: 选型建议
+          - text: ：对于常规的项目级规范同步与调试，官方的
+          - code: CLAUDE.md
+          - text: +
+          - code: Auto Memory
+          - text: 已完全足够。如果你需要在几十个毫无关联的 Repo 之间共享某种深度的全局抽象知识库，再考虑引入重型的第三方向量记忆插件。
+  - text: "> comment on"
+  - link "bluesky":
+    - /url: https://bsky.app/intent/compose?text=Reading%20%40antfu.me%20https%3A%2F%2Fantfu.me%2Fposts%2Fclaude-code-memory-system%0A%0AI%20think...
+  - text: /
+  - link "mastodon":
+    - /url: https://elk.zone/intent/post?text=Reading%20%40antfu%40m.webtoo.ls's%20https%3A%2F%2Fantfu.me%2Fposts%2Fclaude-code-memory-system%0A%0AI%20think...
+  - text: /
+  - link "twitter":
+    - /url: https://twitter.com/intent/tweet?text=Reading%20%40antfu7's%20https%3A%2F%2Fantfu.me%2Fposts%2Fclaude-code-memory-system%0A%0AI%20think...
+  - text: ">"
+  - link "cd ..":
+    - /url: /posts
+  - link "CC BY-NC-SA 4.0":
+    - /url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+  - text: 2025-PRESENT © TreeTreeDi

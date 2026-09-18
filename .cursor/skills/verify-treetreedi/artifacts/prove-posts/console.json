@@ -1,0 +1,15 @@
+{
+  "url": "http://127.0.0.1:3333/posts/claude-code-memory-system",
+  "title": "Claude Code 记忆系统工程指南：CLAUDE.md 与 Auto Memory",
+  "messages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    }
+  ],
+  "errors": []
+}
